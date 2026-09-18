@@ -194,4 +194,141 @@
 
   // Keep the displayed year current without hard-coding it in every page.
   document.querySelectorAll('.current-year').forEach(function (year) { year.textContent = new Date().getFullYear(); });
+
+  // --- Home project slideshow (minimized preview of the portfolio) ---
+  const viewport = document.querySelector('.project-slideshow .slideshow-viewport');
+  if (viewport) {
+    const slides = Array.from(viewport.querySelectorAll('.slide'));
+    const dotsWrap = document.querySelector('.project-slideshow .slide-dots');
+    let slideIndex = 0;
+    let slideTimer = null;
+    const slideInterval = 2000;
+
+    function renderDots() {
+      if (!dotsWrap) return;
+      dotsWrap.innerHTML = '';
+      slides.forEach(function (_, i) {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'slide-dot' + (i === slideIndex ? ' active' : '');
+        dot.setAttribute('aria-label', 'Go to project ' + (i + 1));
+        dot.addEventListener('click', function () { goTo(i); restartTimer(); });
+        dotsWrap.appendChild(dot);
+      });
+    }
+
+    function goTo(index) {
+      slideIndex = (index + slides.length) % slides.length;
+      slides.forEach(function (slide, i) {
+        slide.classList.toggle('active', i === slideIndex);
+      });
+      dotsWrap.querySelectorAll('.slide-dot').forEach(function (dot, i) {
+        dot.classList.toggle('active', i === slideIndex);
+      });
+    }
+
+    function restartTimer() {
+      if (slideTimer) clearInterval(slideTimer);
+      slideTimer = setInterval(function () { goTo(slideIndex + 1); }, slideInterval);
+    }
+
+    const prev = viewport.parentElement.querySelector('.slide-control[data-dir="prev"]');
+    const next = viewport.parentElement.querySelector('.slide-control[data-dir="next"]');
+    if (prev) prev.addEventListener('click', function () { goTo(slideIndex - 1); restartTimer(); });
+    if (next) next.addEventListener('click', function () { goTo(slideIndex + 1); restartTimer(); });
+
+    renderDots();
+    restartTimer();
+
+    // Pause auto-play while the visitor hovers or the tab is hidden.
+    viewport.addEventListener('mouseenter', function () { if (slideTimer) clearInterval(slideTimer); });
+    viewport.addEventListener('mouseleave', restartTimer);
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden && slideTimer) clearInterval(slideTimer);
+      else if (!document.hidden) restartTimer();
+    });
+  }
+
+  // --- Testimonials: render, filter by region and load more ---
+  const reviewsGrid = document.getElementById('reviews-grid');
+  if (reviewsGrid && Array.isArray(window.BLUELINE_REVIEWS)) {
+    const reviews = window.BLUELINE_REVIEWS;
+    const tabs = Array.from(document.querySelectorAll('.region-tab'));
+    const loadMore = document.getElementById('load-more');
+    const PAGE_SIZE = 12;
+    let activeRegion = 'all';
+    let shown = PAGE_SIZE;
+
+    const initialsOf = function (name) {
+      return name.split(' ').map(function (w) { return w.charAt(0); }).slice(0, 2).join('').toUpperCase();
+    };
+    const starsOf = function (n) { return '\u2605'.repeat(n) + '\u2606'.repeat(5 - n); };
+
+    function filtered() {
+      return activeRegion === 'all' ? reviews : reviews.filter(function (r) { return r.region === activeRegion; });
+    }
+
+    function renderCard(r) {
+      const card = document.createElement('article');
+      card.className = 'review-card reveal visible';
+      card.dataset.region = r.region;
+      const avatar = document.createElement('span');
+      avatar.className = 'review-avatar';
+      avatar.textContent = initialsOf(r.name);
+      const region = document.createElement('span');
+      region.className = 'review-region';
+      region.textContent = r.region;
+      const stars = document.createElement('div');
+      stars.className = 'review-stars';
+      stars.setAttribute('aria-label', r.stars + ' out of 5 stars');
+      stars.textContent = starsOf(r.stars);
+      const body = document.createElement('p');
+      body.textContent = '\u201C' + r.text + '\u201D';
+      const reviewer = document.createElement('div');
+      reviewer.className = 'reviewer';
+      const meta = document.createElement('div');
+      const name = document.createElement('strong');
+      name.textContent = r.name;
+      const place = document.createElement('small');
+      place.textContent = r.place + ', ' + r.region + ' \u00B7 ' + r.service;
+      meta.appendChild(name);
+      meta.appendChild(place);
+      reviewer.appendChild(avatar);
+      reviewer.appendChild(meta);
+      card.appendChild(stars);
+      card.appendChild(region);
+      card.appendChild(body);
+      card.appendChild(reviewer);
+      return card;
+    }
+
+    function render() {
+      const list = filtered();
+      const visible = list.slice(0, shown);
+      reviewsGrid.innerHTML = '';
+      visible.forEach(function (r) { reviewsGrid.appendChild(renderCard(r)); });
+      if (loadMore) {
+        loadMore.style.display = visible.length < list.length ? '' : 'none';
+      }
+    }
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        tabs.forEach(function (t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+        activeRegion = tab.dataset.region;
+        shown = PAGE_SIZE;
+        render();
+      });
+    });
+
+    if (loadMore) {
+      loadMore.addEventListener('click', function () {
+        shown += PAGE_SIZE;
+        render();
+      });
+    }
+
+    render();
+  }
 }());
