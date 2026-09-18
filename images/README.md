@@ -4,7 +4,7 @@ The website currently uses remote Unsplash reference photography so the preview 
 
 | Placeholder path | Used for |
 | --- | --- |
-| `images/pool-hero.jpg` | Homepage and inner-page hero pool backdrop |
+| `images/pool-hero-resort.jpg` | Homepage hero backdrop (commercial/hospitality pool) |
 | `images/pool-service.jpg` | Swimming Pools service card/detail |
 | `images/waterpark-service.jpg` | Waterparks service card/detail |
 | `images/sauna-service.jpg` | Sauna service card/detail |
